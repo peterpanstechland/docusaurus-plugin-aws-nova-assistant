@@ -1,0 +1,107 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Nova AI Chat Backend with RAG Support
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 512
+    Runtime: python3.12
+    Architectures:
+      - x86_64
+
+Parameters:
+  AllowedOrigin:
+    Type: String
+    Default: '*'
+    Description: CORS allowed origin (e.g., https://your-site.com)
+  
+  ModelId:
+    Type: String
+    Default: amazon.nova-micro-v1:0
+    Description: Amazon Bedrock model ID
+  
+  SystemPrompt:
+    Type: String
+    Default: |
+      You are a helpful AI assistant for a technical documentation site.
+      Use the provided context from the documentation to answer questions accurately.
+      If the context doesn't contain relevant information, say so and provide general guidance.
+      Always be concise and cite specific documentation sections when possible.
+    Description: System prompt for the AI assistant
+  
+  RagTopK:
+    Type: Number
+    Default: 5
+    Description: Number of relevant chunks to retrieve for RAG
+
+Resources:
+  # S3 Bucket for RAG Index
+  RagIndexBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-rag-index'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  # Lambda Function with RAG
+  NovaChatRagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-chat'
+      Handler: handler_rag.handler
+      CodeUri: ./
+      Description: Nova AI Chat Lambda with RAG
+      Environment:
+        Variables:
+          CORS_ALLOW_ORIGIN: !Ref AllowedOrigin
+          MODEL_ID: !Ref ModelId
+          SYSTEM_PROMPT: !Ref SystemPrompt
+          MAX_TOKENS: '1024'
+          RAG_INDEX_BUCKET: !Ref RagIndexBucket
+          RAG_INDEX_KEY: 'rag-index.json'
+          RAG_TOP_K: !Ref RagTopK
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:Converse
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub '${RagIndexBucket.Arn}/*'
+      Events:
+        ApiPost:
+          Type: HttpApi
+          Properties:
+            Path: /api/nova-chat
+            Method: POST
+        ApiOptions:
+          Type: HttpApi
+          Properties:
+            Path: /api/nova-chat
+            Method: OPTIONS
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/nova-chat'
+  
+  RagIndexBucketName:
+    Description: S3 bucket for RAG index
+    Value: !Ref RagIndexBucket
+  
+  UploadRagIndexCommand:
+    Description: Command to upload RAG index
+    Value: !Sub 'aws s3 cp rag-index.json s3://${RagIndexBucket}/rag-index.json'
+

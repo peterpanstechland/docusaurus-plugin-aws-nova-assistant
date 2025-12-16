@@ -1,18 +1,23 @@
 {
   "name": "docusaurus-plugin-aws-nova-assistant",
   "version": "1.0.0",
-  "description": "Docusaurus plugin for AWS Bedrock Nova AI chat assistant",
+  "description": "Docusaurus plugin for AWS Bedrock Nova AI chat assistant with RAG support",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "bin": {
+    "build-rag-index": "./src/scripts/build-rag-index.js"
+  },
   "files": [
     "lib",
-    "src/lambda"
+    "src/lambda",
+    "src/scripts"
   ],
   "scripts": {
     "build": "tsc && npm run copy-assets",
     "copy-assets": "node -e \"const fs=require('fs');const path=require('path');function copyDir(s,d){if(!fs.existsSync(d))fs.mkdirSync(d,{recursive:true});fs.readdirSync(s).forEach(f=>{const sp=path.join(s,f);const dp=path.join(d,f);if(fs.statSync(sp).isDirectory())copyDir(sp,dp);else if(f.endsWith('.css'))fs.copyFileSync(sp,dp);});}copyDir('src/theme','lib/theme');\"",
     "watch": "tsc --watch",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "build-rag-index": "node src/scripts/build-rag-index.js"
   },
   "keywords": [
     "docusaurus",
@@ -22,7 +27,9 @@
     "nova",
     "ai",
     "chatbot",
-    "llm"
+    "llm",
+    "rag",
+    "retrieval-augmented-generation"
   ],
   "author": "Peter Pan <peterpan@example.com>",
   "license": "MIT",

@@ -1,17 +1,24 @@
 /**
  * Nova Chat Component
  *
- * AI chat assistant powered by AWS Bedrock Nova
+ * AI chat assistant powered by AWS Bedrock Nova with RAG support
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import styles from './styles.module.css';
+
+interface Source {
+  title: string;
+  slug: string;
+  source: string;
+}
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  sources?: Source[];
 }
 
 interface NovaChatConfig {
@@ -20,6 +27,7 @@ interface NovaChatConfig {
   placeholder?: string;
   position?: 'bottom-right' | 'bottom-left';
   themeColor?: string;
+  enableRag?: boolean;
 }
 
 function getConfig(): NovaChatConfig {
@@ -46,11 +54,17 @@ function getConfig(): NovaChatConfig {
   return {};
 }
 
+interface ApiResponse {
+  message: string;
+  sources?: Source[];
+}
+
 async function callNovaAPI(
   message: string,
   apiEndpoint: string,
-  history: Message[]
-): Promise<string> {
+  history: Message[],
+  useRag: boolean = true
+): Promise<ApiResponse> {
   try {
     const response = await fetch(apiEndpoint, {
       method: 'POST',
@@ -59,6 +73,7 @@ async function callNovaAPI(
       },
       body: JSON.stringify({
         message,
+        useRag,
         history: history.map((m) => ({
           role: m.role,
           content: m.content,
@@ -71,18 +86,42 @@ async function callNovaAPI(
     }
 
     const data = await response.json();
-    return data.message || 'No response received.';
+    return {
+      message: data.message || 'No response received.',
+      sources: data.sources,
+    };
   } catch (error) {
     console.error('Nova API error:', error);
 
     // Demo mode fallback
-    const demoResponses: Record<string, string> = {
-      hello: '👋 Hello! I am Nova AI assistant powered by AWS Bedrock.',
-      help: 'I can help you with:\n- 🔍 Search documentation\n- 📖 Explain concepts\n- 💡 Provide code examples',
-      aws: 'AWS (Amazon Web Services) is the leading cloud platform. This site has tutorials on EC2, S3, Lambda, Bedrock, and more.',
-      nova: 'Amazon Nova is AWS\'s latest multimodal foundation model series, available through Amazon Bedrock.',
-      bedrock:
-        'Amazon Bedrock provides API access to multiple foundation models including Claude, Nova, and Llama.',
+    const demoResponses: Record<string, ApiResponse> = {
+      hello: {
+        message: '👋 Hello! I am Nova AI assistant powered by AWS Bedrock with RAG capabilities. I can search through the documentation to answer your questions!',
+      },
+      help: {
+        message: 'I can help you with:\n- 🔍 Search documentation (powered by RAG)\n- 📖 Explain concepts from the docs\n- 💡 Find relevant code examples\n- 🔗 Link to source pages',
+      },
+      aws: {
+        message: 'AWS (Amazon Web Services) is the leading cloud platform. Based on the documentation, this site covers tutorials on EC2, S3, Lambda, Bedrock, and more.',
+        sources: [
+          { title: 'AWS Getting Started', slug: 'guides/aws/getting-started', source: 'guides/aws/getting-started.md' },
+        ],
+      },
+      nova: {
+        message: 'Amazon Nova is AWS\'s latest multimodal foundation model series, available through Amazon Bedrock. It offers excellent price-performance for various AI tasks.',
+        sources: [
+          { title: 'Bedrock Introduction', slug: 'guides/ai/bedrock-intro', source: 'guides/ai/bedrock-intro.md' },
+        ],
+      },
+      bedrock: {
+        message: 'Amazon Bedrock provides API access to multiple foundation models including Claude, Nova, and Llama. You can use the Converse API for chat applications.',
+        sources: [
+          { title: 'Bedrock Introduction', slug: 'guides/ai/bedrock-intro', source: 'guides/ai/bedrock-intro.md' },
+        ],
+      },
+      rag: {
+        message: 'This assistant uses RAG (Retrieval-Augmented Generation) to search through the Docusaurus documentation and provide context-aware answers. When deployed with the RAG backend, it will show relevant source documents.',
+      },
     };
 
     const lowerMessage = message.toLowerCase();
@@ -92,8 +131,33 @@ async function callNovaAPI(
       }
     }
 
-    return `Thanks for your question! In production, this would call AWS Nova to answer: "${message}"\n\nTry asking about **AWS**, **Bedrock**, **Nova**, or say **hello**!`;
+    return {
+      message: `Thanks for your question! In production with RAG enabled, I would search the documentation to answer: "${message}"\n\nTry asking about **AWS**, **Bedrock**, **Nova**, **RAG**, or say **hello**!`,
+    };
   }
+}
+
+function SourceLinks({ sources }: { sources: Source[] }) {
+  if (!sources || sources.length === 0) return null;
+
+  return (
+    <div className={styles.sources}>
+      <span className={styles.sourcesLabel}>📚 Sources:</span>
+      <div className={styles.sourceLinks}>
+        {sources.map((source, idx) => (
+          <a
+            key={idx}
+            href={`/docs/${source.slug}`}
+            className={styles.sourceLink}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {source.title}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function NovaChat(): JSX.Element | null {
@@ -107,9 +171,10 @@ export default function NovaChat(): JSX.Element | null {
   const config = getConfig();
   const {
     apiEndpoint = '/api/nova-chat',
-    welcomeMessage = '👋 Hi! I am Nova AI assistant. How can I help you?',
-    placeholder = 'Type your question...',
+    welcomeMessage = '👋 Hi! I am Nova AI assistant with RAG. Ask me anything about this documentation!',
+    placeholder = 'Search docs or ask a question...',
     position = 'bottom-right',
+    enableRag = true,
   } = config;
 
   useEffect(() => {
@@ -153,14 +218,16 @@ export default function NovaChat(): JSX.Element | null {
       const response = await callNovaAPI(
         userMessage.content,
         apiEndpoint,
-        messages
+        messages,
+        enableRag
       );
 
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: response,
+        content: response.message,
         timestamp: new Date(),
+        sources: response.sources,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -175,7 +242,7 @@ export default function NovaChat(): JSX.Element | null {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, apiEndpoint, messages]);
+  }, [input, isLoading, apiEndpoint, messages, enableRag]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -196,6 +263,7 @@ export default function NovaChat(): JSX.Element | null {
             <div className={styles.headerInfo}>
               <span className={styles.headerIcon}>⚡</span>
               <span className={styles.headerTitle}>Nova AI</span>
+              {enableRag && <span className={styles.ragBadge}>RAG</span>}
               <span className={styles.statusDot} />
             </div>
             <button
@@ -216,10 +284,15 @@ export default function NovaChat(): JSX.Element | null {
                 {msg.role === 'assistant' && (
                   <span className={styles.avatar}>🤖</span>
                 )}
-                <div className={styles.messageContent}>
-                  {msg.content.split('\n').map((line, i) => (
-                    <p key={i}>{line || <br />}</p>
-                  ))}
+                <div className={styles.messageWrapper}>
+                  <div className={styles.messageContent}>
+                    {msg.content.split('\n').map((line, i) => (
+                      <p key={i}>{line || <br />}</p>
+                    ))}
+                  </div>
+                  {msg.role === 'assistant' && msg.sources && (
+                    <SourceLinks sources={msg.sources} />
+                  )}
                 </div>
               </div>
             ))}
@@ -268,6 +341,7 @@ export default function NovaChat(): JSX.Element | null {
 
           <div className={styles.footer}>
             Powered by <span className={styles.footerBrand}>AWS Nova</span>
+            {enableRag && <span className={styles.footerRag}> + RAG</span>}
           </div>
         </div>
       )}
@@ -303,4 +377,3 @@ export default function NovaChat(): JSX.Element | null {
     </div>
   );
 }
-

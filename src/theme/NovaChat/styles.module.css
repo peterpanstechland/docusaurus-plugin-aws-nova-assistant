@@ -333,6 +333,70 @@
   font-weight: 600;
 }
 
+.footerRag {
+  color: var(--nova-accent, #f43f5e);
+  font-weight: 600;
+}
+
+/* RAG Badge */
+.ragBadge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Message Wrapper for sources */
+.messageWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Source Links */
+.sources {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--ifm-background-color, rgba(40, 40, 50, 0.5));
+  border-radius: 8px;
+  border-left: 3px solid var(--ifm-color-primary, #8b5cf6);
+}
+
+.sourcesLabel {
+  font-size: 0.75rem;
+  color: var(--ifm-font-color-secondary, #9ca3af);
+  font-weight: 600;
+}
+
+.sourceLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sourceLink {
+  font-size: 0.75rem;
+  color: var(--ifm-color-primary, #8b5cf6);
+  text-decoration: none;
+  padding: 2px 8px;
+  background: var(--ifm-background-surface-color, rgba(139, 92, 246, 0.1));
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.sourceLink:hover {
+  background: var(--ifm-color-primary, #8b5cf6);
+  color: white;
+  text-decoration: none;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .container {
