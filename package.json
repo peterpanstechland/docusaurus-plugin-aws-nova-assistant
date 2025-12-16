@@ -5,7 +5,8 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "bin": {
-    "build-rag-index": "./src/scripts/build-rag-index.js"
+    "build-rag-index": "./src/scripts/build-rag-index.js",
+    "build-rag-embeddings": "./src/scripts/build-rag-index-embeddings.js"
   },
   "files": [
     "lib",
@@ -17,7 +18,8 @@
     "copy-assets": "node -e \"const fs=require('fs');const path=require('path');function copyDir(s,d){if(!fs.existsSync(d))fs.mkdirSync(d,{recursive:true});fs.readdirSync(s).forEach(f=>{const sp=path.join(s,f);const dp=path.join(d,f);if(fs.statSync(sp).isDirectory())copyDir(sp,dp);else if(f.endsWith('.css'))fs.copyFileSync(sp,dp);});}copyDir('src/theme','lib/theme');\"",
     "watch": "tsc --watch",
     "prepublishOnly": "npm run build",
-    "build-rag-index": "node src/scripts/build-rag-index.js"
+    "build-rag-index": "node src/scripts/build-rag-index.js",
+    "build-rag-embeddings": "node src/scripts/build-rag-index-embeddings.js"
   },
   "keywords": [
     "docusaurus",
@@ -25,11 +27,15 @@
     "aws",
     "bedrock",
     "nova",
+    "titan",
     "ai",
     "chatbot",
     "llm",
     "rag",
-    "retrieval-augmented-generation"
+    "retrieval-augmented-generation",
+    "semantic-search",
+    "embeddings",
+    "vector-search"
   ],
   "author": "Peter Pan <peterpan@example.com>",
   "license": "MIT",

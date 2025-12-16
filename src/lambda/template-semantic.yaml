@@ -1,0 +1,119 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Nova AI Chat with Semantic Search (Vector Embeddings)
+
+Globals:
+  Function:
+    Timeout: 90
+    MemorySize: 1024
+    Runtime: python3.12
+    Architectures:
+      - x86_64
+
+Parameters:
+  AllowedOrigin:
+    Type: String
+    Default: '*'
+    Description: CORS allowed origin
+  
+  ChatModelId:
+    Type: String
+    Default: amazon.nova-micro-v1:0
+    Description: Bedrock chat model ID
+  
+  EmbeddingModelId:
+    Type: String
+    Default: amazon.titan-embed-text-v2:0
+    Description: Bedrock embedding model ID
+  
+  SystemPrompt:
+    Type: String
+    Default: |
+      You are a helpful AI assistant for a technical documentation site.
+      Use the provided context from the documentation to answer questions accurately.
+      If the context doesn't contain relevant information, say so.
+      Always be concise and cite specific documentation sections when possible.
+    Description: System prompt for the AI
+  
+  RagTopK:
+    Type: Number
+    Default: 5
+    Description: Number of semantic search results
+  
+  SimilarityThreshold:
+    Type: Number
+    Default: 0.5
+    Description: Minimum similarity score (0-1)
+
+Resources:
+  # S3 Bucket for embeddings index
+  EmbeddingsIndexBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-embeddings'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  # Lambda with semantic search
+  SemanticSearchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-chat'
+      Handler: handler_semantic.handler
+      CodeUri: ./
+      Description: Nova AI Chat with Semantic Search
+      Environment:
+        Variables:
+          MODEL_ID: !Ref ChatModelId
+          EMBEDDING_MODEL_ID: !Ref EmbeddingModelId
+          SYSTEM_PROMPT: !Ref SystemPrompt
+          MAX_TOKENS: '1024'
+          RAG_INDEX_BUCKET: !Ref EmbeddingsIndexBucket
+          RAG_INDEX_KEY: 'rag-index-embeddings.json'
+          RAG_TOP_K: !Ref RagTopK
+          SIMILARITY_THRESHOLD: !Ref SimilarityThreshold
+          CORS_ALLOW_ORIGIN: !Ref AllowedOrigin
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:Converse
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub '${EmbeddingsIndexBucket.Arn}/*'
+      Events:
+        ApiPost:
+          Type: HttpApi
+          Properties:
+            Path: /api/nova-chat
+            Method: POST
+        ApiOptions:
+          Type: HttpApi
+          Properties:
+            Path: /api/nova-chat
+            Method: OPTIONS
+
+Outputs:
+  ApiEndpoint:
+    Description: API endpoint URL
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/nova-chat'
+  
+  EmbeddingsBucketName:
+    Description: S3 bucket for embeddings index
+    Value: !Ref EmbeddingsIndexBucket
+  
+  UploadCommand:
+    Description: Command to upload embeddings index
+    Value: !Sub 'aws s3 cp rag-index-embeddings.json s3://${EmbeddingsIndexBucket}/rag-index-embeddings.json'
+

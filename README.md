@@ -83,7 +83,14 @@ sam deploy --guided
 
 RAG enables the AI assistant to search your documentation and provide accurate, contextual answers with source citations.
 
-### Building the RAG Index
+### Two Search Modes
+
+| Mode | Index Builder | Handler | Search Method |
+|------|--------------|---------|---------------|
+| **Keyword** | `build-rag-index` | `handler_rag.py` | TF-IDF style keyword matching |
+| **Semantic** | `build-rag-embeddings` | `handler_semantic.py` | Vector cosine similarity |
+
+### Option 1: Keyword Search (Simple)
 
 The `build-rag-index` CLI tool scans your Markdown files and generates a searchable index:
 
@@ -108,6 +115,40 @@ npx build-rag-index --docs ./docs --blog ./blog --output ./static/rag-index.json
 npx build-rag-index --docs ./docs --output ./static/rag-index.json
 ```
 
+### Option 2: Semantic Search (Advanced)
+
+For better accuracy, use vector embeddings with **Titan Embeddings**:
+
+```bash
+# Install AWS SDK (required)
+npm install @aws-sdk/client-bedrock-runtime
+
+# Build semantic index (requires AWS credentials)
+npx build-rag-embeddings --docs ./docs --blog ./blog --output ./rag-index-embeddings.json
+```
+
+**Options:**
+```bash
+npx build-rag-embeddings [options]
+
+  --docs <path>       Docs directory (default: ./docs)
+  --blog <path>       Blog directory (default: ./blog)
+  --output <path>     Output file (default: ./rag-index-embeddings.json)
+  --chunk-size <n>    Chunk size (default: 512)
+  --region <region>   AWS region (default: us-east-1)
+  --model <model>     Embedding model (default: amazon.titan-embed-text-v2:0)
+```
+
+**Deploy with semantic search:**
+```bash
+cd node_modules/docusaurus-plugin-aws-nova-assistant/src/lambda
+sam build -t template-semantic.yaml
+sam deploy --guided --template-file template-semantic.yaml
+
+# Upload embeddings index
+aws s3 cp ./rag-index-embeddings.json s3://YOUR-BUCKET/rag-index-embeddings.json
+```
+
 ### How RAG Works
 
 1. **Index Generation**: The CLI extracts text from your Markdown files, splits into chunks, and generates keywords.
@@ -120,17 +161,29 @@ npx build-rag-index --docs ./docs --output ./static/rag-index.json
 
 ### RAG Architecture
 
+**Keyword Search:**
+```
+User Query → Keyword Extraction → Match Index → Top-K Chunks → Nova Response
+```
+
+**Semantic Search:**
+```
+User Query → Titan Embedding → Cosine Similarity → Top-K Chunks → Nova Response
+```
+
 ```
 ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│   Docusaurus    │      │   API Gateway   │      │  Lambda + RAG   │
-│   + Chat UI     │─────▶│                 │─────▶│                 │
+│   Docusaurus    │      │   API Gateway   │      │     Lambda      │
+│   + Chat UI     │─────▶│                 │─────▶│  + RAG Search   │
 └─────────────────┘      └─────────────────┘      └────────┬────────┘
                                                           │
-                                                          ▼
-┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│   S3 Bucket     │◀─────│  RAG Index      │      │ Amazon Bedrock  │
-│  (rag-index)    │      │  (JSON)         │      │  Nova Model     │
-└─────────────────┘      └─────────────────┘      └─────────────────┘
+                         ┌────────────────────────────────┼────────────────────────────────┐
+                         │                                │                                │
+                         ▼                                ▼                                ▼
+              ┌─────────────────┐              ┌─────────────────┐              ┌─────────────────┐
+              │   S3 Bucket     │              │ Titan Embeddings│              │  Nova Model     │
+              │ (Vector Index)  │              │  (Query Vector) │              │  (Generation)   │
+              └─────────────────┘              └─────────────────┘              └─────────────────┘
 ```
 
 ## 🔧 Backend Deployment
