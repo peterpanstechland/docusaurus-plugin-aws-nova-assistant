@@ -24,8 +24,6 @@ A Docusaurus plugin that integrates **AWS Bedrock Nova** AI chat assistant with 
 
 ```bash
 npm install docusaurus-plugin-aws-nova-assistant
-# or
-yarn add docusaurus-plugin-aws-nova-assistant
 ```
 
 ## 🚀 Quick Start
