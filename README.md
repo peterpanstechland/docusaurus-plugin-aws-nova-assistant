@@ -1,7 +1,7 @@
-# @peterml/docusaurus-plugin-aws-nova-assistant
+# docusaurus-plugin-aws-nova-assistant
 
-[![npm version](https://img.shields.io/npm/v/@peterml/docusaurus-plugin-aws-nova-assistant.svg)](https://www.npmjs.com/package/@peterml/docusaurus-plugin-aws-nova-assistant)
-[![license](https://img.shields.io/npm/l/@peterml/docusaurus-plugin-aws-nova-assistant.svg)](https://github.com/peterpanstechland/docusaurus-plugin-aws-nova-assistant/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/docusaurus-plugin-aws-nova-assistant.svg)](https://www.npmjs.com/package/docusaurus-plugin-aws-nova-assistant)
+[![license](https://img.shields.io/npm/l/docusaurus-plugin-aws-nova-assistant.svg)](https://github.com/peterpanstechland/docusaurus-plugin-aws-nova-assistant/blob/main/LICENSE)
 
 A Docusaurus plugin that integrates **AWS Bedrock Nova** AI chat assistant into your documentation site.
 
@@ -21,9 +21,9 @@ A Docusaurus plugin that integrates **AWS Bedrock Nova** AI chat assistant into 
 ## 📦 Installation
 
 ```bash
-npm install @peterml/docusaurus-plugin-aws-nova-assistant
+npm install docusaurus-plugin-aws-nova-assistant
 # or
-yarn add @peterml/docusaurus-plugin-aws-nova-assistant
+yarn add docusaurus-plugin-aws-nova-assistant
 ```
 
 ## 🚀 Quick Start
@@ -35,7 +35,7 @@ yarn add @peterml/docusaurus-plugin-aws-nova-assistant
 module.exports = {
   plugins: [
     [
-      '@peterml/docusaurus-plugin-aws-nova-assistant',
+      'docusaurus-plugin-aws-nova-assistant',
       {
         apiEndpoint: 'https://your-api.execute-api.region.amazonaws.com/api/nova-chat',
         welcomeMessage: '👋 Hi! How can I help you?',
@@ -53,7 +53,7 @@ For production use, deploy the included AWS Lambda function:
 
 ```bash
 # Navigate to the lambda directory
-cd node_modules/@peterml/docusaurus-plugin-aws-nova-assistant/src/lambda
+cd node_modules/docusaurus-plugin-aws-nova-assistant/src/lambda
 
 # Deploy with SAM CLI
 sam build
@@ -90,7 +90,7 @@ See [Backend Deployment](#backend-deployment) for detailed instructions.
 ### Deploy with SAM
 
 ```bash
-cd node_modules/@peterml/docusaurus-plugin-nova-ai/src/lambda
+cd node_modules/docusaurus-plugin-aws-nova-assistant/src/lambda
 
 # Build the application
 sam build

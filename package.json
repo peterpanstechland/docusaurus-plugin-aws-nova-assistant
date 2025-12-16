@@ -1,5 +1,5 @@
 {
-  "name": "@peterml/docusaurus-plugin-aws-nova-assistant",
+  "name": "docusaurus-plugin-aws-nova-assistant",
   "version": "1.0.0",
   "description": "Docusaurus plugin for AWS Bedrock Nova AI chat assistant",
   "main": "lib/index.js",
