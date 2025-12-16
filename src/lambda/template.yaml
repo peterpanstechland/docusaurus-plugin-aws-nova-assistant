@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Nova AI Chat Backend for Docusaurus
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: python3.12
+    Architectures:
+      - x86_64
+
+Parameters:
+  AllowedOrigin:
+    Type: String
+    Default: '*'
+    Description: CORS allowed origin (e.g., https://your-site.com)
+  
+  ModelId:
+    Type: String
+    Default: amazon.nova-micro-v1:0
+    Description: Amazon Bedrock model ID
+  
+  SystemPrompt:
+    Type: String
+    Default: You are a helpful AI assistant. Answer questions concisely and accurately.
+    Description: System prompt for the AI assistant
+
+Resources:
+  NovaChatFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: docusaurus-nova-chat
+      Handler: handler.handler
+      CodeUri: ./
+      Description: Nova AI Chat Lambda Function
+      Environment:
+        Variables:
+          CORS_ALLOW_ORIGIN: !Ref AllowedOrigin
+          MODEL_ID: !Ref ModelId
+          SYSTEM_PROMPT: !Ref SystemPrompt
+          MAX_TOKENS: '1024'
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:Converse
+              Resource: '*'
+      Events:
+        ApiPost:
+          Type: HttpApi
+          Properties:
+            Path: /api/nova-chat
+            Method: POST
+        ApiOptions:
+          Type: HttpApi
+          Properties:
+            Path: /api/nova-chat
+            Method: OPTIONS
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/nova-chat'
+

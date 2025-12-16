@@ -1,0 +1,53 @@
+{
+  "name": "@peterml/docusaurus-plugin-nova-ai",
+  "version": "1.0.0",
+  "description": "Docusaurus plugin for AWS Bedrock Nova AI chat assistant",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "src/lambda"
+  ],
+  "scripts": {
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "node -e \"const fs=require('fs');const path=require('path');function copyDir(s,d){if(!fs.existsSync(d))fs.mkdirSync(d,{recursive:true});fs.readdirSync(s).forEach(f=>{const sp=path.join(s,f);const dp=path.join(d,f);if(fs.statSync(sp).isDirectory())copyDir(sp,dp);else if(f.endsWith('.css'))fs.copyFileSync(sp,dp);});}copyDir('src/theme','lib/theme');\"",
+    "watch": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "docusaurus",
+    "docusaurus-plugin",
+    "aws",
+    "bedrock",
+    "nova",
+    "ai",
+    "chatbot",
+    "llm"
+  ],
+  "author": "Peter Pan <peterpan@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/peterpanstechland/docusaurus-plugin-nova-ai"
+  },
+  "bugs": {
+    "url": "https://github.com/peterpanstechland/docusaurus-plugin-nova-ai/issues"
+  },
+  "homepage": "https://github.com/peterpanstechland/docusaurus-plugin-nova-ai#readme",
+  "peerDependencies": {
+    "@docusaurus/core": "^3.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "^3.9.0",
+    "@docusaurus/types": "^3.9.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+
